@@ -134,11 +134,11 @@ def generate_images(
 
     config = types.GenerateContentConfig(
         response_modalities=["IMAGE", "TEXT"],
-        image_generation_config=types.ImageGenerationConfig(
-            number_of_images=min(max(num_images, 1), 4),
-            aspect_ratio=ASPECT_RATIO_MAP.get(aspect_ratio, "1:1"),
-        ),
     )
+
+    # Append aspect ratio instruction to the prompt text
+    ar = ASPECT_RATIO_MAP.get(aspect_ratio, "1:1")
+    contents[-1] = types.Part(text=contents[-1].text + f"\n\nAspect ratio: {ar}")
 
     results = []
     for _ in range(min(num_images, 4)):
@@ -147,9 +147,10 @@ def generate_images(
             contents=contents,
             config=config,
         )
-        for part in response.candidates[0].content.parts:
-            if part.inline_data and part.inline_data.data:
-                results.append(base64.b64decode(part.inline_data.data))
+        if response.candidates:
+            for part in response.candidates[0].content.parts:
+                if part.inline_data and part.inline_data.data:
+                    results.append(base64.b64decode(part.inline_data.data))
         if len(results) >= num_images:
             break
 
